@@ -22,3 +22,197 @@
   <div>awaiting deployment...</div>
 </body>
 </html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>the1vs100</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: black;
+      color: white;
+      font-family: monospace;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+
+    #message {
+      font-size: 2em;
+      letter-spacing: 0.1em;
+      text-align: center;
+      opacity: 1;
+      transition: opacity 1s ease-in-out;
+    }
+
+    #latin {
+      position: fixed;
+      bottom: 20px;
+      font-size: 1em;
+      opacity: 0.7;
+    }
+
+    #countdown {
+      font-size: 2em;
+      letter-spacing: 0.1em;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="glyphCanvas"></canvas>
+<div id="message">do you have the keys</div>
+<div id="countdown"></div>
+<div id="latin">TEMET NOSCE</div>
+
+<script>
+  const canvas = document.getElementById('glyphCanvas');
+  const ctx = canvas.getContext('2d');
+  let width = canvas.width = window.innerWidth;
+  let height = canvas.height = window.innerHeight;
+  const columns = Math.floor(width / 20);
+  let drops = Array(columns).fill(1);
+  let fontSize = 20;
+  let speed = 33; // in ms
+  let slowdown = false;
+  let sparse = false;
+
+  const glyphs = '𓀀𓂀𓆣𓅓𓇋𓋴𓂋𓉔𓏏𓂧𓃀𓎼'.split('');
+
+  function draw() {
+    if (slowdown) return;
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = '#0f0';
+    ctx.font = fontSize + 'px monospace';
+
+    for (let i = 0; i < drops.length; i++) {
+      const text = glyphs[Math.floor(Math.random() * glyphs.length)];
+      ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+      if (drops[i] * fontSize > height && Math.random() > (sparse ? 0.985 : 0.975)) {
+        drops[i] = 0;
+      }
+      drops[i]++;
+    }
+  }
+
+  let interval = setInterval(draw, speed);
+
+  function setSpeed(ms) {
+    clearInterval(interval);
+    interval = setInterval(draw, ms);
+  }
+
+  // Logic
+  let input = '';
+  const targetLength = 11;
+  const message = document.getElementById('message');
+  const countdown = document.getElementById('countdown');
+
+  function fadeMessage(newText) {
+    message.style.opacity = 0;
+    setTimeout(() => {
+      message.innerText = newText;
+      message.style.opacity = 1;
+    }, 1000);
+  }
+
+  function startCountdown(targetDate) {
+    countdown.style.display = 'block';
+    function updateCountdown() {
+      const now = new Date();
+      const diff = targetDate - now;
+      if (diff <= 0) {
+        countdown.innerText = '00:00:00';
+        return;
+      }
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+      const minutes = Math.floor((diff / (1000 * 60)) % 60);
+      const seconds = Math.floor((diff / 1000) % 60);
+      countdown.innerText = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+  }
+
+  function reset() {
+    input = '';
+    fadeMessage('do you have the keys');
+    countdown.style.display = 'none';
+    setSpeed(33);
+    sparse = false;
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      reset();
+      return;
+    }
+
+    if (input.length >= targetLength) return;
+    input += e.key;
+
+    if (input.length === targetLength) {
+      if (input === 'temet nosce') {
+        // lowercase sequence
+        slowdown = true;
+        let t = 0;
+        const interval = setInterval(() => {
+          t++;
+          setSpeed(60 + t * 30);
+          if (t === 11) {
+            clearInterval(interval);
+            fadeMessage('🔑');
+            slowdown = false;
+            sparse = true;
+          }
+        }, 1000);
+      } else if (input === 'TEMET NOSCE') {
+        // uppercase sequence
+        slowdown = true;
+        let t = 0;
+        const interval = setInterval(() => {
+          t++;
+          setSpeed(60 + t * 30);
+          if (t === 5) {
+            setSpeed(200 - t * 15); // begin speeding up
+          }
+          if (t === 11) {
+            clearInterval(interval);
+            fadeMessage('');
+            message.style.display = 'none';
+            countdown.style.display = 'block';
+            const targetDate = new Date('2025-11-11T00:00:00');
+            startCountdown(targetDate);
+            slowdown = false;
+            sparse = false;
+          }
+        }, 1000);
+      }
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    width = canvas.width = window.innerWidth;
+    height = canvas.height = window.innerHeight;
+    drops = Array(Math.floor(width / fontSize)).fill(1);
+  });
+</script>
+
+</body>
+</html>
